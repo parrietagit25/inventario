@@ -14,7 +14,7 @@ if (isset($_POST['eliminar_tela_id'])) {
     }
     $conn->query("DELETE FROM telas WHERE id = $id");
     header('Location: telas.php');
-    exit();
+    //exit();
 }
 
 // Editar tela
@@ -45,7 +45,7 @@ if (isset($_POST['editar_tela_id'])) {
     $sql = "UPDATE telas SET tipo='$tipo', color='$color', metros=$metros, costo=$costo $foto_sql WHERE id = $id";
     $conn->query($sql);
     header('Location: telas.php');
-    exit();
+    //exit();
 }
 
 // Movimiento manual
@@ -63,7 +63,7 @@ if (isset($_POST['movimiento_tela_id'])) {
     // Registrar movimiento
     $conn->query("INSERT INTO movimientos_inventario (tela_id, tipo_movimiento, cantidad, descripcion) VALUES ($id, '$tipo_mov', $cantidad, '$descripcion')");
     header('Location: telas.php');
-    exit();
+    //exit();
 }
 
 // Registrar tela
@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registro_tela'])) {
     // Registrar movimiento automático
     $conn->query("INSERT INTO movimientos_inventario (tela_id, tipo_movimiento, cantidad, descripcion) VALUES ($tela_id, 'ingreso', $metros, 'Registro inicial de tela')");
     header('Location: telas.php');
-    exit();
+    //exit();
 }
 // Obtener todas las telas
 $telas = $conn->query("SELECT * FROM telas ORDER BY fecha_ingreso DESC");
@@ -165,7 +165,21 @@ $telas = $conn->query("SELECT * FROM telas ORDER BY fecha_ingreso DESC");
         <td><?= $tela['costo'] ?></td>
         <td>
           <?php if (!empty($tela['foto'])): ?>
-            <img src="../img/telas/<?= htmlspecialchars($tela['foto']) ?>" alt="Foto" style="max-width:60px; max-height:60px;">
+            <img src="../img/telas/<?= htmlspecialchars($tela['foto']) ?>" alt="Foto" style="max-width:60px; max-height:60px; cursor:pointer;" data-bs-toggle="modal" data-bs-target="#modalFotoTela<?= $tela['id'] ?>">
+            <!-- Modal de foto ampliada -->
+            <div class="modal fade" id="modalFotoTela<?= $tela['id'] ?>" tabindex="-1" aria-labelledby="modalFotoTelaLabel<?= $tela['id'] ?>" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="modalFotoTelaLabel<?= $tela['id'] ?>">Foto de Tela</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                  </div>
+                  <div class="modal-body text-center">
+                    <img src="../img/telas/<?= htmlspecialchars($tela['foto']) ?>" alt="Foto" style="max-width:100%; height:auto;">
+                  </div>
+                </div>
+              </div>
+            </div>
           <?php else: ?>
             <span class="text-muted">Sin foto</span>
           <?php endif; ?>
@@ -296,8 +310,9 @@ $telas = $conn->query("SELECT * FROM telas ORDER BY fecha_ingreso DESC");
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body text-center">
-              <img src="barcode.php?id=<?= $tela['id'] ?>" alt="Código de barras" class="img-fluid mb-2"><br>
-              <a href="barcode.php?id=<?= $tela['id'] ?>" download="barcode_tela_<?= $tela['id'] ?>.png" class="btn btn-outline-primary btn-sm">Descargar</a>
+              <?php $barcode_url = "https://bwipjs-api.metafloor.com/?bcid=code128&text=".$tela['id'].""; 
+              echo "<img src='$barcode_url' alt='Código de barras'>"; ?> <br>
+              <a href="../descargar_barcode.php?id=<?= $tela['id'] ?>" download class="btn btn-outline-primary btn-sm">Descargar</a>
             </div>
           </div>
         </div>

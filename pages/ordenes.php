@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registro_orden'])) {
         $conn->query("UPDATE productos SET cantidad = cantidad - $cant WHERE id = $pid");
     }
     header('Location: ordenes.php');
-    exit();
+    //exit();
 }
 
 // Listar órdenes

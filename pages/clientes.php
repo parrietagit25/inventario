@@ -7,7 +7,7 @@ if (isset($_POST['eliminar_cliente_id'])) {
     $id = intval($_POST['eliminar_cliente_id']);
     $conn->query("DELETE FROM clientes WHERE id = $id");
     header('Location: clientes.php');
-    exit();
+    //exit();
 }
 
 // Editar cliente
@@ -19,7 +19,7 @@ if (isset($_POST['editar_cliente_id'])) {
     $sql = "UPDATE clientes SET nombre='$nombre', telefono='$telefono', direccion='$direccion' WHERE id = $id";
     $conn->query($sql);
     header('Location: clientes.php');
-    exit();
+    //exit();
 }
 
 // Registrar cliente
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registro_cliente'])) 
     $sql = "INSERT INTO clientes (nombre, telefono, direccion) VALUES ('$nombre', '$telefono', '$direccion')";
     $conn->query($sql);
     header('Location: clientes.php');
-    exit();
+    //exit();
 }
 // Obtener todos los clientes
 $clientes = $conn->query("SELECT * FROM clientes ORDER BY id DESC");

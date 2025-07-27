@@ -17,7 +17,7 @@ if (isset($_POST['movimiento_producto_id'])) {
     // Registrar movimiento
     $conn->query("INSERT INTO movimientos_inventario (producto_id, tipo_movimiento, cantidad, descripcion) VALUES ($id, '$tipo_mov', $cantidad, '$descripcion')");
     header('Location: productos.php');
-    exit();
+    //exit();
 }
 
 // Eliminar producto
@@ -31,7 +31,7 @@ if (isset($_POST['eliminar_producto_id'])) {
     }
     $conn->query("DELETE FROM productos WHERE id = $id");
     header('Location: productos.php');
-    exit();
+    //exit();
 }
 
 // Editar producto
@@ -62,7 +62,7 @@ if (isset($_POST['editar_producto_id'])) {
     $sql = "UPDATE productos SET nombre='$nombre', tipo='$tipo', color='$color', cantidad=$cantidad, precio=$precio $foto_sql WHERE id = $id";
     $conn->query($sql);
     header('Location: productos.php');
-    exit();
+    //exit();
 }
 
 // Registrar producto
@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registro_producto']))
     // Registrar movimiento automático
     $conn->query("INSERT INTO movimientos_inventario (producto_id, tipo_movimiento, cantidad, descripcion) VALUES ($producto_id, 'ingreso', $cantidad, 'Registro inicial de producto')");
     header('Location: productos.php');
-    exit();
+    //exit();
 }
 // Obtener todos los productos
 $productos = $conn->query("SELECT * FROM productos ORDER BY fecha_registro DESC");
@@ -174,7 +174,21 @@ $productos = $conn->query("SELECT * FROM productos ORDER BY fecha_registro DESC"
         <td><?= $prod['precio'] ?></td>
         <td>
           <?php if (!empty($prod['foto'])): ?>
-            <img src="../img/<?= htmlspecialchars($prod['foto']) ?>" alt="Foto" style="max-width:60px; max-height:60px;">
+            <img src="../img/<?= htmlspecialchars($prod['foto']) ?>" alt="Foto" style="max-width:60px; max-height:60px; cursor:pointer;" data-bs-toggle="modal" data-bs-target="#modalFotoProducto<?= $prod['id'] ?>">
+            <!-- Modal de foto ampliada -->
+            <div class="modal fade" id="modalFotoProducto<?= $prod['id'] ?>" tabindex="-1" aria-labelledby="modalFotoProductoLabel<?= $prod['id'] ?>" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="modalFotoProductoLabel<?= $prod['id'] ?>">Foto de Producto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                  </div>
+                  <div class="modal-body text-center">
+                    <img src="../img/<?= htmlspecialchars($prod['foto']) ?>" alt="Foto" style="max-width:100%; height:auto;">
+                  </div>
+                </div>
+              </div>
+            </div>
           <?php else: ?>
             <span class="text-muted">Sin foto</span>
           <?php endif; ?>
@@ -312,8 +326,9 @@ $productos = $conn->query("SELECT * FROM productos ORDER BY fecha_registro DESC"
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body text-center">
-              <img src="barcode.php?id=<?= $prod['id'] ?>&tipo=producto" alt="Código de barras" class="img-fluid mb-2"><br>
-              <a href="barcode.php?id=<?= $prod['id'] ?>&tipo=producto" download="barcode_producto_<?= $prod['id'] ?>.png" class="btn btn-outline-primary btn-sm">Descargar</a>
+              <?php $barcode_url = "https://bwipjs-api.metafloor.com/?bcid=code128&text=" . $prod['id']; 
+              echo "<img src='$barcode_url' alt='Código de barras' class='img-fluid mb-2'>"; ?> <br>
+              <a href="../descargar_barcode.php?id=<?= $prod['id'] ?>" download class="btn btn-outline-primary btn-sm">Descargar</a>
             </div>
           </div>
         </div>

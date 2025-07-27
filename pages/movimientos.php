@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registro_movimiento']
     $conn->query("INSERT INTO movimientos_inventario (producto_id, tela_id, tipo_movimiento, cantidad, descripcion) VALUES (".
         ($producto_id ? $producto_id : 'NULL').", ".($tela_id ? $tela_id : 'NULL').", '$tipo_mov', $cantidad, '$descripcion')");
     header('Location: movimientos.php');
-    exit();
+    //exit();
 }
 
 // Obtener productos y telas para el formulario
