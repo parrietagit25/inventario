@@ -16,7 +16,10 @@ if (isset($_POST['editar_cliente_id'])) {
     $nombre = $conn->real_escape_string($_POST['nombre']);
     $telefono = $conn->real_escape_string($_POST['telefono']);
     $direccion = $conn->real_escape_string($_POST['direccion']);
-    $sql = "UPDATE clientes SET nombre='$nombre', telefono='$telefono', direccion='$direccion' WHERE id = $id";
+    $email = $conn->real_escape_string($_POST['email']);
+    $descripcion = $conn->real_escape_string($_POST['descripcion']);
+    $status = isset($_POST['status']) ? intval($_POST['status']) : 1;
+    $sql = "UPDATE clientes SET nombre='$nombre', telefono='$telefono', direccion='$direccion', email='$email', descripcion='$descripcion', status=$status WHERE id = $id";
     $conn->query($sql);
     header('Location: clientes.php');
     //exit();
@@ -27,7 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registro_cliente'])) 
     $nombre = $conn->real_escape_string($_POST['nombre']);
     $telefono = $conn->real_escape_string($_POST['telefono']);
     $direccion = $conn->real_escape_string($_POST['direccion']);
-    $sql = "INSERT INTO clientes (nombre, telefono, direccion) VALUES ('$nombre', '$telefono', '$direccion')";
+    $email = $conn->real_escape_string($_POST['email']);
+    $descripcion = $conn->real_escape_string($_POST['descripcion']);
+    $status = isset($_POST['status']) ? intval($_POST['status']) : 1;
+    $sql = "INSERT INTO clientes (nombre, telefono, direccion, email, descripcion, status) VALUES ('$nombre', '$telefono', '$direccion', '$email', '$descripcion', $status)";
     $conn->query($sql);
     header('Location: clientes.php');
     //exit();
@@ -63,6 +69,21 @@ $clientes = $conn->query("SELECT * FROM clientes ORDER BY id DESC");
             <label class="form-label">Dirección</label>
             <input type="text" name="direccion" class="form-control">
           </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Descripción</label>
+            <input type="text" name="descripcion" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-control">
+              <option value="1">Activo</option>
+              <option value="0">Inactivo</option>
+            </select>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -81,6 +102,9 @@ $clientes = $conn->query("SELECT * FROM clientes ORDER BY id DESC");
         <th>Nombre</th>
         <th>Teléfono</th>
         <th>Dirección</th>
+        <th>Email</th>
+        <th>Descripción</th>
+        <th>Status</th>
         <th>Acciones</th>
       </tr>
     </thead>
@@ -91,6 +115,9 @@ $clientes = $conn->query("SELECT * FROM clientes ORDER BY id DESC");
         <td><?= htmlspecialchars($cli['nombre']) ?></td>
         <td><?= htmlspecialchars($cli['telefono']) ?></td>
         <td><?= htmlspecialchars($cli['direccion']) ?></td>
+        <td><?= htmlspecialchars($cli['email']) ?></td>
+        <td><?= htmlspecialchars($cli['descripcion']) ?></td>
+        <td><?= $cli['status'] == 1 ? 'Activo' : 'Inactivo' ?></td>
         <td>
           <!-- Botón Editar -->
           <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalEditar<?= $cli['id'] ?>">Editar</button>
@@ -120,6 +147,25 @@ $clientes = $conn->query("SELECT * FROM clientes ORDER BY id DESC");
                 <div class="mb-3">
                   <label class="form-label">Dirección</label>
                   <input type="text" name="direccion" class="form-control" value="<?= htmlspecialchars($cli['direccion']) ?>">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Email</label>
+                  <input type="email" name="email" class="form-control" value="<?= htmlspecialchars($cli['email']) ?>">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Descripción</label>
+                  <input type="text" name="descripcion" class="form-control" value="<?= htmlspecialchars($cli['descripcion']) ?>">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Status</label>
+                  <select name="status" class="form-control">
+                    <option value="1" <?= $cli['status'] == 1 ? 'selected' : '' ?>>Activo</option>
+                    <option value="0" <?= $cli['status'] == 0 ? 'selected' : '' ?>>Inactivo</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Fecha Log</label>
+                  <input type="text" class="form-control" value="<?= htmlspecialchars($cli['fecha_log']) ?>" readonly>
                 </div>
               </div>
               <div class="modal-footer">
@@ -156,3 +202,32 @@ $clientes = $conn->query("SELECT * FROM clientes ORDER BY id DESC");
   </table>
 </div>
 <?php include '../includes/footer.php'; ?> 
+
+<!-- DataTables y extensiones -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+<script>
+$(document).ready(function() {
+  $('table.table').DataTable({
+    dom: 'Bfrtip',
+    buttons: [
+      'excelHtml5',
+      'csvHtml5',
+      'pdfHtml5',
+      'print'
+    ],
+    language: {
+      url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+    }
+  });
+});
+</script> 

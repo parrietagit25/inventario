@@ -5,13 +5,6 @@ include '../includes/db.php';
 // Eliminar tela
 if (isset($_POST['eliminar_tela_id'])) {
     $id = intval($_POST['eliminar_tela_id']);
-    // Obtener foto para eliminar archivo
-    $res = $conn->query("SELECT foto FROM telas WHERE id = $id");
-    if ($res && $row = $res->fetch_assoc()) {
-        if (!empty($row['foto']) && file_exists('../img/telas/' . $row['foto'])) {
-            unlink('../img/telas/' . $row['foto']);
-        }
-    }
     $conn->query("DELETE FROM telas WHERE id = $id");
     header('Location: telas.php');
     //exit();
@@ -20,79 +13,29 @@ if (isset($_POST['eliminar_tela_id'])) {
 // Editar tela
 if (isset($_POST['editar_tela_id'])) {
     $id = intval($_POST['editar_tela_id']);
-    $tipo = $conn->real_escape_string($_POST['tipo']);
-    $color = $conn->real_escape_string($_POST['color']);
-    $metros = floatval($_POST['metros']);
-    $costo = floatval($_POST['costo']);
-    $foto_sql = '';
-    if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
-        // Eliminar foto anterior
-        $res = $conn->query("SELECT foto FROM telas WHERE id = $id");
-        if ($res && $row = $res->fetch_assoc()) {
-            if (!empty($row['foto']) && file_exists('../img/telas/' . $row['foto'])) {
-                unlink('../img/telas/' . $row['foto']);
-            }
-        }
-        $ext = pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION);
-        $nombreFoto = uniqid('tela_') . '.' . $ext;
-        $rutaDestino = '../img/telas/' . $nombreFoto;
-        if (!is_dir('../img/telas/')) {
-            mkdir('../img/telas/', 0777, true);
-        }
-        move_uploaded_file($_FILES['foto']['tmp_name'], $rutaDestino);
-        $foto_sql = ", foto = '$nombreFoto'";
-    }
-    $sql = "UPDATE telas SET tipo='$tipo', color='$color', metros=$metros, costo=$costo $foto_sql WHERE id = $id";
+    $descripcion = $conn->real_escape_string($_POST['descripcion']);
+    $cantidad_yardas = floatval($_POST['cantidad_yardas']);
+    $precio_costo = floatval($_POST['precio_costo']);
+    $stat = isset($_POST['stat']) ? intval($_POST['stat']) : 1;
+    $sql = "UPDATE telas SET descripcion='$descripcion', cantidad_yardas=$cantidad_yardas, precio_costo=$precio_costo, stat=$stat WHERE id = $id";
     $conn->query($sql);
-    header('Location: telas.php');
-    //exit();
-}
-
-// Movimiento manual
-if (isset($_POST['movimiento_tela_id'])) {
-    $id = intval($_POST['movimiento_tela_id']);
-    $tipo_mov = $_POST['tipo_movimiento'] === 'ingreso' ? 'ingreso' : 'salida';
-    $cantidad = floatval($_POST['cantidad_mov']);
-    $descripcion = $conn->real_escape_string($_POST['descripcion_mov']);
-    // Actualizar stock
-    if ($tipo_mov === 'ingreso') {
-        $conn->query("UPDATE telas SET metros = metros + $cantidad WHERE id = $id");
-    } else {
-        $conn->query("UPDATE telas SET metros = metros - $cantidad WHERE id = $id");
-    }
-    // Registrar movimiento
-    $conn->query("INSERT INTO movimientos_inventario (tela_id, tipo_movimiento, cantidad, descripcion) VALUES ($id, '$tipo_mov', $cantidad, '$descripcion')");
     header('Location: telas.php');
     //exit();
 }
 
 // Registrar tela
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['registro_tela'])) {
-    $tipo = $conn->real_escape_string($_POST['tipo']);
-    $color = $conn->real_escape_string($_POST['color']);
-    $metros = floatval($_POST['metros']);
-    $costo = floatval($_POST['costo']);
-    $foto = '';
-    if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
-        $ext = pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION);
-        $nombreFoto = uniqid('tela_') . '.' . $ext;
-        $rutaDestino = '../img/telas/' . $nombreFoto;
-        if (!is_dir('../img/telas/')) {
-            mkdir('../img/telas/', 0777, true);
-        }
-        move_uploaded_file($_FILES['foto']['tmp_name'], $rutaDestino);
-        $foto = $nombreFoto;
-    }
-    $sql = "INSERT INTO telas (tipo, color, metros, costo, foto) VALUES ('$tipo', '$color', $metros, $costo, '$foto')";
+    $descripcion = $conn->real_escape_string($_POST['descripcion']);
+    $cantidad_yardas = floatval($_POST['cantidad_yardas']);
+    $precio_costo = floatval($_POST['precio_costo']);
+    $stat = isset($_POST['stat']) ? intval($_POST['stat']) : 1;
+    $sql = "INSERT INTO telas (descripcion, cantidad_yardas, precio_costo, stat) VALUES ('$descripcion', $cantidad_yardas, $precio_costo, $stat)";
     $conn->query($sql);
-    $tela_id = $conn->insert_id;
-    // Registrar movimiento automático
-    $conn->query("INSERT INTO movimientos_inventario (tela_id, tipo_movimiento, cantidad, descripcion) VALUES ($tela_id, 'ingreso', $metros, 'Registro inicial de tela')");
     header('Location: telas.php');
     //exit();
 }
 // Obtener todas las telas
-$telas = $conn->query("SELECT * FROM telas ORDER BY fecha_ingreso DESC");
+$telas = $conn->query("SELECT * FROM telas ORDER BY fecha_log DESC");
 ?>
 <h2 class="mb-4">Telas</h2>
 <!-- Botón para abrir el modal -->
@@ -103,7 +46,7 @@ $telas = $conn->query("SELECT * FROM telas ORDER BY fecha_ingreso DESC");
 <div class="modal fade" id="modalRegistroTela" tabindex="-1" aria-labelledby="modalRegistroTelaLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="post" enctype="multipart/form-data">
+      <form method="post">
         <input type="hidden" name="registro_tela" value="1">
         <div class="modal-header">
           <h5 class="modal-title" id="modalRegistroTelaLabel">Registrar Tela</h5>
@@ -111,24 +54,23 @@ $telas = $conn->query("SELECT * FROM telas ORDER BY fecha_ingreso DESC");
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label">Tipo de tela</label>
-            <input type="text" name="tipo" class="form-control" required>
+            <label class="form-label">Descripción</label>
+            <input type="text" name="descripcion" class="form-control" required>
           </div>
           <div class="mb-3">
-            <label class="form-label">Color</label>
-            <input type="text" name="color" class="form-control" required>
+            <label class="form-label">Cantidad (Yardas)</label>
+            <input type="number" step="0.01" name="cantidad_yardas" class="form-control" required>
           </div>
           <div class="mb-3">
-            <label class="form-label">Cantidad</label>
-            <input type="number" step="0.01" name="metros" class="form-control" required>
+            <label class="form-label">Precio de Costo</label>
+            <input type="number" step="0.01" name="precio_costo" class="form-control" required>
           </div>
           <div class="mb-3">
-            <label class="form-label">Costo</label>
-            <input type="number" step="0.01" name="costo" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Foto</label>
-            <input type="file" name="foto" class="form-control" accept="image/*">
+            <label class="form-label">Status</label>
+            <select name="stat" class="form-control">
+              <option value="1">Activo</option>
+              <option value="0">Inactivo</option>
+            </select>
           </div>
         </div>
         <div class="modal-footer">
@@ -145,63 +87,35 @@ $telas = $conn->query("SELECT * FROM telas ORDER BY fecha_ingreso DESC");
     <thead>
       <tr>
         <th>ID</th>
-        <th>Tipo</th>
-        <th>Color</th>
-        <th>Cantidad</th>
-        <th>Costo</th>
-        <th>Foto</th>
-        <th>Fecha Ingreso</th>
+        <th>Descripción</th>
+        <th>Cantidad (Yardas)</th>
+        <th>Precio de Costo</th>
+        <th>Status</th>
+        <th>Fecha Registro</th>
         <th>Acciones</th>
-        <th>Código de Barra</th>
       </tr>
     </thead>
     <tbody>
       <?php $telas->data_seek(0); while($tela = $telas->fetch_assoc()): ?>
       <tr>
         <td><?= $tela['id'] ?></td>
-        <td><?= htmlspecialchars($tela['tipo']) ?></td>
-        <td><?= htmlspecialchars($tela['color']) ?></td>
-        <td><?= $tela['metros'] ?></td>
-        <td><?= $tela['costo'] ?></td>
-        <td>
-          <?php if (!empty($tela['foto'])): ?>
-            <img src="../img/telas/<?= htmlspecialchars($tela['foto']) ?>" alt="Foto" style="max-width:60px; max-height:60px; cursor:pointer;" data-bs-toggle="modal" data-bs-target="#modalFotoTela<?= $tela['id'] ?>">
-            <!-- Modal de foto ampliada -->
-            <div class="modal fade" id="modalFotoTela<?= $tela['id'] ?>" tabindex="-1" aria-labelledby="modalFotoTelaLabel<?= $tela['id'] ?>" aria-hidden="true">
-              <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h5 class="modal-title" id="modalFotoTelaLabel<?= $tela['id'] ?>">Foto de Tela</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                  </div>
-                  <div class="modal-body text-center">
-                    <img src="../img/telas/<?= htmlspecialchars($tela['foto']) ?>" alt="Foto" style="max-width:100%; height:auto;">
-                  </div>
-                </div>
-              </div>
-            </div>
-          <?php else: ?>
-            <span class="text-muted">Sin foto</span>
-          <?php endif; ?>
-        </td>
-        <td><?= $tela['fecha_ingreso'] ?></td>
+        <td><?= htmlspecialchars($tela['descripcion']) ?></td>
+        <td><?= number_format($tela['cantidad_yardas'], 2) ?></td>
+        <td>$<?= number_format($tela['precio_costo'], 2) ?></td>
+        <td><?= $tela['stat'] == 1 ? 'Activo' : 'Inactivo' ?></td>
+        <td><?= $tela['fecha_log'] ?></td>
         <td>
           <!-- Botón Editar -->
           <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalEditar<?= $tela['id'] ?>">Editar</button>
           <!-- Botón Eliminar -->
           <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#modalEliminar<?= $tela['id'] ?>">Eliminar</button>
-          <!-- Botón Movimiento -->
-          <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#modalMovimiento<?= $tela['id'] ?>">Movimiento</button>
-        </td>
-        <td>
-          <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#modalBarcode<?= $tela['id'] ?>">Generar</button>
         </td>
       </tr>
       <!-- Modal Editar -->
       <div class="modal fade" id="modalEditar<?= $tela['id'] ?>" tabindex="-1" aria-labelledby="modalEditarLabel<?= $tela['id'] ?>" aria-hidden="true">
         <div class="modal-dialog">
           <div class="modal-content">
-            <form method="post" enctype="multipart/form-data">
+            <form method="post">
               <input type="hidden" name="editar_tela_id" value="<?= $tela['id'] ?>">
               <div class="modal-header">
                 <h5 class="modal-title" id="modalEditarLabel<?= $tela['id'] ?>">Editar Tela</h5>
@@ -209,32 +123,27 @@ $telas = $conn->query("SELECT * FROM telas ORDER BY fecha_ingreso DESC");
               </div>
               <div class="modal-body">
                 <div class="mb-3">
-                  <label class="form-label">Tipo de tela</label>
-                  <input type="text" name="tipo" class="form-control" value="<?= htmlspecialchars($tela['tipo']) ?>" required>
+                  <label class="form-label">Descripción</label>
+                  <input type="text" name="descripcion" class="form-control" value="<?= htmlspecialchars($tela['descripcion']) ?>" required>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label">Color</label>
-                  <input type="text" name="color" class="form-control" value="<?= htmlspecialchars($tela['color']) ?>" required>
+                  <label class="form-label">Cantidad (Yardas)</label>
+                  <input type="number" step="0.01" name="cantidad_yardas" class="form-control" value="<?= $tela['cantidad_yardas'] ?>" required>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label">Cantidad</label>
-                  <input type="number" step="0.01" name="metros" class="form-control" value="<?= $tela['metros'] ?>" required>
+                  <label class="form-label">Precio de Costo</label>
+                  <input type="number" step="0.01" name="precio_costo" class="form-control" value="<?= $tela['precio_costo'] ?>" required>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label">Costo</label>
-                  <input type="number" step="0.01" name="costo" class="form-control" value="<?= $tela['costo'] ?>" required>
+                  <label class="form-label">Status</label>
+                  <select name="stat" class="form-control">
+                    <option value="1" <?= $tela['stat'] == 1 ? 'selected' : '' ?>>Activo</option>
+                    <option value="0" <?= $tela['stat'] == 0 ? 'selected' : '' ?>>Inactivo</option>
+                  </select>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label">Foto actual</label><br>
-                  <?php if (!empty($tela['foto'])): ?>
-                    <img src="../img/telas/<?= htmlspecialchars($tela['foto']) ?>" alt="Foto" style="max-width:60px; max-height:60px;">
-                  <?php else: ?>
-                    <span class="text-muted">Sin foto</span>
-                  <?php endif; ?>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Nueva foto (opcional)</label>
-                  <input type="file" name="foto" class="form-control" accept="image/*">
+                  <label class="form-label">Fecha Registro</label>
+                  <input type="text" class="form-control" value="<?= htmlspecialchars($tela['fecha_log']) ?>" readonly>
                 </div>
               </div>
               <div class="modal-footer">
@@ -266,59 +175,37 @@ $telas = $conn->query("SELECT * FROM telas ORDER BY fecha_ingreso DESC");
           </div>
         </div>
       </div>
-      <!-- Modal Movimiento -->
-      <div class="modal fade" id="modalMovimiento<?= $tela['id'] ?>" tabindex="-1" aria-labelledby="modalMovimientoLabel<?= $tela['id'] ?>" aria-hidden="true">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <form method="post">
-              <input type="hidden" name="movimiento_tela_id" value="<?= $tela['id'] ?>">
-              <div class="modal-header">
-                <h5 class="modal-title" id="modalMovimientoLabel<?= $tela['id'] ?>">Movimiento de Inventario</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-              </div>
-              <div class="modal-body">
-                <div class="mb-3">
-                  <label class="form-label">Tipo de movimiento</label>
-                  <select name="tipo_movimiento" class="form-select" required>
-                    <option value="ingreso">Ingreso</option>
-                    <option value="salida">Salida</option>
-                  </select>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Cantidad</label>
-                  <input type="number" step="0.01" name="cantidad_mov" class="form-control" required>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Descripción</label>
-                  <input type="text" name="descripcion_mov" class="form-control">
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="submit" class="btn btn-primary">Registrar movimiento</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-      <!-- Modal Código de Barras -->
-      <div class="modal fade" id="modalBarcode<?= $tela['id'] ?>" tabindex="-1" aria-labelledby="modalBarcodeLabel<?= $tela['id'] ?>" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="modalBarcodeLabel<?= $tela['id'] ?>">Código de Barras</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body text-center">
-              <?php $barcode_url = "https://bwipjs-api.metafloor.com/?bcid=code128&text=".$tela['id'].""; 
-              echo "<img src='$barcode_url' alt='Código de barras'>"; ?> <br>
-              <a href="../descargar_barcode.php?id=<?= $tela['id'] ?>" download class="btn btn-outline-primary btn-sm">Descargar</a>
-            </div>
-          </div>
-        </div>
-      </div>
       <?php endwhile; ?>
     </tbody>
   </table>
 </div>
+
+<!-- DataTables y extensiones -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+<script>
+$(document).ready(function() {
+  $('table.table').DataTable({
+    dom: 'Bfrtip',
+    buttons: [
+      'excelHtml5',
+      'csvHtml5',
+      'pdfHtml5',
+      'print'
+    ],
+    language: {
+      url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+    }
+  });
+});
+</script>
 <?php include '../includes/footer.php'; ?> 

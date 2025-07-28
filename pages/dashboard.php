@@ -11,7 +11,7 @@
     <a href="clientes.php" class="btn btn-outline-info w-100">Clientes</a>
   </div>
   <div class="col-md-4">
-    <a href="ordenes.php" class="btn btn-outline-warning w-100">Órdenes</a>
+    <a href="reportes.php" class="btn btn-outline-warning w-100">Reportes</a>
   </div>
   <div class="col-md-4">
     <a href="movimientos.php" class="btn btn-outline-secondary w-100">Movimientos de Inventario</a>
